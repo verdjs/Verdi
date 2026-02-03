@@ -1,46 +1,8 @@
 let aTab = 0;
 let tabCounter = 1;
 let bTabs = [];
-const connection = new BareMux.BareMuxConnection("/baremux/worker.js");
-const wispUrl =
-  localStorage.getItem("verdis_wispUrl") ||
-  "wss://mexicoon.top/";
-const bareUrl = "https://useclassplay.vercel.app/fq/";
 
-let searchE;
-const se = localStorage.getItem("verdis_searchEngine") || "DuckDuckGo";
-
-if (se === "DuckDuckGo") {
-  searchE = "https://duckduckgo.com/search?q=";
-} else if (se === "Bing") {
-  searchE = "https://bing.com/search?q=";
-} else if (se === "Google") {
-  searchE = "https://google.com/search?q=";
-} else if (se === "Startpage") {
-  searchE = "https://startpage.com/search?q=";
-} else if (se === "Qwant") {
-  searchE = "https://qwant.com/search?q=";
-} else {
-  searchE = "https://search.brave.com/search?q=";
-}
-
-connection.setTransport("/libcurl/index.mjs", [{ websocket: wispUrl }]);
-
-const CONFIG = {
-  files: {
-    wasm: "/homework/history.wasm.wasm",
-    all: "/homework/math.all.js",
-    sync: "/homework/science.sync.js",
-  },
-};
-
-const { ScramjetController } = $scramjetLoadController();
-const scramjet = new ScramjetController({
-  files: CONFIG.files,
-});
-scramjet.init();
-
-scramjet.init();
+// Removed proxy configuration - apps now load directly
 
 function newTab() {
   const tabCont = document.querySelector(".tabs");

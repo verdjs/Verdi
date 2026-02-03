@@ -20,13 +20,8 @@
     <title>IXL | Maths, English and Science Practice</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="/uv/uv.bundle.js"></script>
-    <script src="/uv/uv.config.js"></script>
-    <script src="/baremux/index.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <script src="/assets/js/t.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/@widgetbot/html-embed"></script>
-    <script src="/homework/math.all.js"></script>
     <link rel="stylesheet" href="/styles/index.css">
     <link rel="stylesheet" href="/assets/css/colors.css" id="css-theme-link">
     <link rel="stylesheet" href="/fa/css/all.css">
@@ -102,22 +97,7 @@
                     <i class="ri-apps-line"></i>
                 </a>
             </li>
-            <li>
-                <a onclick="navTo('movies')" href="#" data-page="movies">
-                    <i class="ri-video-line"></i>
-                </a>
-            </li>
-            <li>
-                <a onclick="navTo('vms'); showToast('success', 'VMs are still in beta! Report bugs on the repo/Discord.', 'fas fa-exclamation-triangle')"
-                    href="#" data-page="vms">
-                    <i class="ri-computer-line"></i>
-                </a>
-            </li>
-            <li>
-                <a onclick="navTo('android')" href="#" data-page="android">
-                    <i class="ri-smartphone-line"></i>
-                </a>
-            </li>
+
             <li>
                 <a onclick="navTo('assistant'); showToast('success', 'AI is in beta! Report bugs on the Discord/Repo', 'fas fa-exclamation-triangle')"
                     href="#" data-page="ai">
@@ -152,16 +132,6 @@
         <p id="splash" class="text-medium font-light text-white/50">
             wsp
         </p>
-        <br>
-        <div class="searchathome">
-            <i class="fas fa-search"></i>
-            <input id="homesearch" disabled autocomplete="off" style="margin-right: -3%;" type="text"
-                placeholder="search not ready yet!" />
-            <svg viewBox="25 25 50 50" class="loading">
-                <circle r="20" cy="50" cx="50"></circle>
-            </svg>
-        </div>
-        <div class="search-warning" style="margin: 6px 0 0 6px;">This is a proxy; you could get in trouble.</div>
         <br>
     </div>
 
