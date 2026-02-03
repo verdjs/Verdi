@@ -1,9 +1,7 @@
 // thanks to https://waves.lat for custom dropdowns || https://gitlab.com/waveslab/waves
 const appSettings = {
-  backend: localStorage.getItem("verdis_backend") || "Scramjet",
   searchEngine: localStorage.getItem("verdis_searchEngine") || "DuckDuckGo",
   decoy: localStorage.getItem("decoy") || "None",
-  wisp: localStorage.getItem("verdis_wispUrlSelected") || "Anura 4",
   theme: localStorage.getItem("verdis_theme") || "default",
   store: localStorage.getItem("verdis_gameStore") || "GN-Math",
 };
@@ -19,14 +17,6 @@ const searchEngineOptions = searchEngineSelector.querySelector(
 const decoySelector = document.querySelector(".decoy-selector");
 const decoySelected = decoySelector.querySelector(".decoy-selected");
 const decoyOptions = decoySelector.querySelector(".decoy-options");
-
-const wispSelector = document.querySelector(".wisp-selector");
-const wispSelected = wispSelector.querySelector(".wisp-selected");
-const wispOptions = wispSelector.querySelector(".wisp-options");
-
-const backendSelector = document.querySelector(".backend-selector");
-const backendSelected = backendSelector.querySelector(".backend-selected");
-const backendOptions = backendSelector.querySelector(".backend-options");
 
 const themeSelector = document.querySelector(".theme-selector");
 const themeSelected = themeSelector.querySelector(".theme-selected");
@@ -367,27 +357,7 @@ createSelector(
   "Successfully updated cloak!"
 );
 
-createSelector(
-  "wisp",
-  wispSelected,
-  wispOptions,
-  allWispOptions,
-  appSettings.wisp,
-  "verdis_wispUrlSelected",
-  "wispUpdated",
-  "Successfully updated Wisp server!"
-);
-
-createSelector(
-  "backend",
-  backendSelected,
-  backendOptions,
-  allBackendOptions,
-  appSettings.backend,
-  "verdis_backend",
-  "backendUpdated",
-  "Successfully updated backend!"
-);
+// Removed wisp and backend selectors - proxy functionality removed
 
 createSelector(
   "theme",
@@ -422,12 +392,7 @@ document.addEventListener("themeUpdated", (e) => {
     link.href = "/assets/css/colors.css";
   }
 });
-document.addEventListener("wispUpdated", (e) => {
-  const wisp = wispPresets[e.detail];
-
-  localStorage.setItem("verdis_wispUrl", wisp.url);
-  console.log(wisp.url);
-});
+// Removed wisp event listener - proxy functionality removed
 window.addEventListener("load", () => {
   applyDecoy(localStorage.getItem("decoy"));
   console.log("Cloaked as " + localStorage.getItem("decoy"));
