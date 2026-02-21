@@ -115,19 +115,22 @@
             <div class="fs-header">
                 <button class="close-btn" onclick="closeFullPlayer()"><i class="ri-arrow-down-s-line"></i></button>
                 <span class="source">Now Playing</span>
-                <button class="menu-btn" onclick="toggleLyrics()"><i class="ri-file-music-line"></i></button>
+                <button class="menu-btn" id="lyricsToggleBtn" onclick="toggleLyricsPanel()"><i class="ri-file-music-line"></i></button>
             </div>
 
-            <!-- Artwork View -->
-            <div class="fs-artwork" id="artworkView">
-                <div class="cover">
-                    <img id="fsCover" src="/assets/img/fav.png" alt="">
+            <!-- Immersion content: artwork + lyrics always visible together -->
+            <div class="immersion-content">
+                <!-- Artwork (stable size – never resizes based on lyrics state) -->
+                <div class="fs-artwork" id="artworkView">
+                    <div class="cover">
+                        <img id="fsCover" src="/assets/img/fav.png" alt="">
+                    </div>
                 </div>
-            </div>
 
-            <!-- Lyrics View -->
-            <div class="lyrics-view" id="lyricsView">
-                <div id="lyricsContent"></div>
+                <!-- Lyrics panel (always rendered; shows placeholder during loading) -->
+                <div id="my-lyrics-container">
+                    <div id="lyricsContent"></div>
+                </div>
             </div>
 
             <div class="fs-track-info">
@@ -396,11 +399,13 @@
             document.getElementById('fullPlayer').classList.remove('open');
         }
 
-        function toggleLyrics() {
-            const artwork = document.getElementById('artworkView');
-            const lyrics = document.getElementById('lyricsView');
-            artwork.style.display = artwork.style.display === 'none' ? 'flex' : 'none';
-            lyrics.classList.toggle('active', artwork.style.display === 'none');
+        // Toggle lyrics panel visibility without resizing the artwork
+        function toggleLyricsPanel() {
+            const lyricsContainer = document.getElementById('my-lyrics-container');
+            const isHidden = lyricsContainer.style.display === 'none';
+            lyricsContainer.style.display = isHidden ? '' : 'none';
+            const btn = document.getElementById('lyricsToggleBtn');
+            if (btn) btn.classList.toggle('active', isHidden);
         }
 
         function seekFromClick(e) {
@@ -410,21 +415,16 @@
             VerdiMusic.seekPercent(percent);
         }
 
-        // Lyrics
-        async function loadLyrics() {
-            const track = VerdiMusic.getCurrentTrack();
-            if (!track) return;
+        // Lyrics state
+        const lyricsCache = {};
+        let lyricsLoadingFor = null;
 
-            const container = document.getElementById('lyricsContent');
-            container.innerHTML = '<div class="loading-spinner">Loading lyrics...</div>';
+        // Shared HTML snippets for lyrics panel states
+        const LYRICS_LOADING_HTML = '<div class="lyrics-loading-placeholder loading-spinner">Loading lyrics...</div>';
+        const LYRICS_UNAVAILABLE_HTML = '<div class="lyrics-unavailable"><i class="ri-music-line"></i><p>No lyrics available</p></div>';
 
-            const data = await VerdiMusic.getLyrics(track.title, track.artist);
-
-            if (!data) {
-                container.innerHTML = '<div class="empty-state" style="padding:20px;"><i class="ri-music-line"></i><h3>No Lyrics</h3></div>';
-                return;
-            }
-
+        // Render lyrics data into a container element
+        function renderLyricsData(data, container) {
             if (data.synced && data.lyrics) {
                 container.innerHTML = data.lyrics.map((line, i) =>
                     `<div class="lyrics-line" data-time="${line.time}" data-index="${i}">${escapeHtml(line.text)}</div>`
@@ -434,12 +434,69 @@
                     `<div class="lyrics-line">${escapeHtml(line)}</div>`
                 ).join('');
             }
+            document.body.classList.remove('ytm-no-lyrics');
+        }
+
+        // Load lyrics for the current track.
+        // Rules:
+        //   1. Never apply ytm-no-lyrics BEFORE the fetch completes (loading state).
+        //   2. Only apply ytm-no-lyrics AFTER the fetch confirms no lyrics are available.
+        //   3. Use a cache to avoid re-fetching the same track.
+        //   4. Guard against race conditions when tracks change quickly.
+        async function loadLyrics() {
+            const track = VerdiMusic.getCurrentTrack();
+            if (!track) return;
+
+            const container = document.getElementById('lyricsContent');
+
+            // Use cached result if available (avoids refetch on the same track)
+            if (lyricsCache[track.id] !== undefined) {
+                if (lyricsCache[track.id]) {
+                    renderLyricsData(lyricsCache[track.id], container);
+                } else {
+                    container.innerHTML = LYRICS_UNAVAILABLE_HTML;
+                    document.body.classList.add('ytm-no-lyrics');
+                }
+                return;
+            }
+
+            // Show stable loading placeholder – do NOT apply ytm-no-lyrics during loading
+            lyricsLoadingFor = track.id;
+            container.innerHTML = LYRICS_LOADING_HTML;
+            // Ensure artwork is not affected while loading
+            document.body.classList.remove('ytm-no-lyrics');
+
+            const data = await VerdiMusic.getLyrics(track.title, track.artist);
+
+            // Ignore stale response if track changed during fetch
+            if (lyricsLoadingFor !== track.id) return;
+            lyricsLoadingFor = null;
+
+            if (!data) {
+                // Cache the negative result
+                lyricsCache[track.id] = null;
+                container.innerHTML = LYRICS_UNAVAILABLE_HTML;
+                // Only now – after the fetch confirms no lyrics – apply ytm-no-lyrics
+                document.body.classList.add('ytm-no-lyrics');
+                return;
+            }
+
+            // Cache and render lyrics
+            lyricsCache[track.id] = data;
+            renderLyricsData(data, container);
         }
 
         // Update UI on events
         window.addEventListener('verdimusic:trackchange', (e) => {
             const track = e.detail.track;
             if (track) {
+                // Cancel any in-flight lyrics load for the previous track
+                lyricsLoadingFor = null;
+
+                // Remove ytm-no-lyrics immediately so the layout stays stable
+                // while lyrics for the new track are being fetched
+                document.body.classList.remove('ytm-no-lyrics');
+
                 // Show now playing bar
                 document.getElementById('nowPlayingBar').style.display = 'block';
 

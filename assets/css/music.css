@@ -558,7 +558,69 @@
     color: var(--music-accent);
 }
 
-/* Lyrics View in Full Player */
+/* Immersion Layout: artwork + lyrics panel always visible together */
+.immersion-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-height: 0;
+}
+
+/* Artwork in the immersion layout – fixed height so it never grows/shrinks */
+.fullscreen-player .fs-artwork {
+    flex-shrink: 0;
+    flex: 0 0 auto;
+    height: 260px;
+    padding: 12px 20px;
+}
+
+/* Lyrics panel – always rendered, stable dimensions during loading */
+#my-lyrics-container {
+    flex: 1;
+    overflow-y: auto;
+    min-height: 160px;
+    padding: 0 20px 20px;
+}
+
+/* Loading placeholder inside lyrics panel */
+.lyrics-loading-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 160px;
+    color: var(--music-text-secondary);
+}
+
+/* "No lyrics" message – layout-stable, does NOT resize the artwork */
+.lyrics-unavailable {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 160px;
+    color: var(--music-text-secondary);
+    gap: 8px;
+}
+
+.lyrics-unavailable i {
+    font-size: 32px;
+    opacity: 0.4;
+}
+
+.lyrics-unavailable p {
+    margin: 0;
+    font-size: 14px;
+}
+
+/* body.ytm-no-lyrics – lyrics unavailable state.
+   The artwork MUST NOT change size; only the lyrics panel content changes. */
+body.ytm-no-lyrics #my-lyrics-container {
+    /* Keep panel visible with unavailable message; no sizing changes */
+}
+
+/* Lyrics View in Full Player (legacy – kept for backwards compatibility) */
 .lyrics-view {
     display: none;
     flex: 1;
