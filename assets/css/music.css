@@ -784,3 +784,75 @@
     background: var(--music-accent);
     transition: width 0.2s linear;
 }
+/* ==========================================================================
+   Immersion Layout
+   Activated when `ytm-custom-layout` is set on <body> (fullscreen player open).
+   Cover art (left) and lyrics panel (right) shown side-by-side.
+
+   Body class semantics:
+     ytm-custom-layout  — immersion mode is active
+     ytm-lyrics-loading — lyrics fetch in flight; keep layout stable (no collapse)
+     ytm-no-lyrics      — fetch confirmed no lyrics; artwork expands to full width
+   ========================================================================== */
+
+/* Two-column grid layout */
+body.ytm-custom-layout .fullscreen-player.open {
+    display: grid;
+    grid-template-areas:
+        "header  header"
+        "art     lyrics"
+        "info    info"
+        "progress progress"
+        "controls controls"
+        "bottom  bottom";
+    grid-template-rows: auto 1fr auto auto auto auto;
+    grid-template-columns: 1fr 1fr;
+    gap: 0 16px;
+}
+
+body.ytm-custom-layout .fullscreen-player.open > .fs-header    { grid-area: header; }
+body.ytm-custom-layout .fullscreen-player.open > .fs-artwork   { grid-area: art; }
+body.ytm-custom-layout .fullscreen-player.open > .fs-track-info { grid-area: info; }
+body.ytm-custom-layout .fullscreen-player.open > .fs-progress  { grid-area: progress; }
+body.ytm-custom-layout .fullscreen-player.open > .fs-controls  { grid-area: controls; }
+body.ytm-custom-layout .fullscreen-player.open > .fs-bottom    { grid-area: bottom; }
+
+/* Lyrics panel: always visible in immersion mode */
+body.ytm-custom-layout .fullscreen-player.open > .lyrics-view {
+    grid-area: lyrics;
+    display: block;
+    overflow-y: auto;
+    padding: 20px 8px;
+}
+
+/* Loading state: layout stays identical to the "has lyrics" state so the
+   cover art never shifts while the fetch is in-flight. */
+body.ytm-custom-layout.ytm-lyrics-loading .fullscreen-player.open {
+    grid-template-areas:
+        "header  header"
+        "art     lyrics"
+        "info    info"
+        "progress progress"
+        "controls controls"
+        "bottom  bottom";
+}
+body.ytm-custom-layout.ytm-lyrics-loading .fullscreen-player.open > .lyrics-view {
+    display: block;
+}
+
+/* No-lyrics state: collapse lyrics column, artwork spans full width */
+body.ytm-custom-layout.ytm-no-lyrics .fullscreen-player.open {
+    grid-template-areas:
+        "header   header"
+        "art      art"
+        "info     info"
+        "progress progress"
+        "controls controls"
+        "bottom   bottom";
+}
+body.ytm-custom-layout.ytm-no-lyrics .fullscreen-player.open > .lyrics-view {
+    display: none;
+}
+body.ytm-custom-layout.ytm-no-lyrics .fullscreen-player.open > .fs-artwork {
+    transition: transform 0.3s ease;
+}

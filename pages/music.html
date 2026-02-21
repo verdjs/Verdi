@@ -390,10 +390,12 @@
         // Fullscreen player
         function openFullPlayer() {
             document.getElementById('fullPlayer').classList.add('open');
+            document.body.classList.add('ytm-custom-layout');
         }
 
         function closeFullPlayer() {
             document.getElementById('fullPlayer').classList.remove('open');
+            document.body.classList.remove('ytm-custom-layout', 'ytm-no-lyrics', 'ytm-lyrics-loading');
         }
 
         function toggleLyrics() {
@@ -410,21 +412,16 @@
             VerdiMusic.seekPercent(percent);
         }
 
-        // Lyrics
-        async function loadLyrics() {
-            const track = VerdiMusic.getCurrentTrack();
-            if (!track) return;
+        // Token used to discard stale async results when the track changes mid-fetch
+        let lyricsLoadingFor = null;
 
-            const container = document.getElementById('lyricsContent');
-            container.innerHTML = '<div class="loading-spinner">Loading lyrics...</div>';
-
-            const data = await VerdiMusic.getLyrics(track.title, track.artist);
-
+        function renderLyricsData(data, container) {
             if (!data) {
+                document.body.classList.add('ytm-no-lyrics');
                 container.innerHTML = '<div class="empty-state" style="padding:20px;"><i class="ri-music-line"></i><h3>No Lyrics</h3></div>';
                 return;
             }
-
+            document.body.classList.remove('ytm-no-lyrics');
             if (data.synced && data.lyrics) {
                 container.innerHTML = data.lyrics.map((line, i) =>
                     `<div class="lyrics-line" data-time="${line.time}" data-index="${i}">${escapeHtml(line.text)}</div>`
@@ -434,6 +431,41 @@
                     `<div class="lyrics-line">${escapeHtml(line)}</div>`
                 ).join('');
             }
+        }
+
+        // Lyrics
+        async function loadLyrics() {
+            const track = VerdiMusic.getCurrentTrack();
+            if (!track) return;
+
+            const trackId = track.id;
+            lyricsLoadingFor = trackId;
+
+            const container = document.getElementById('lyricsContent');
+
+            // If lyrics for this track are already cached, render immediately with no
+            // layout disruption — skip the loading-spinner and body-class transitions.
+            const cached = VerdiMusic.getLyricsFromCache(trackId);
+            if (cached !== undefined) {
+                renderLyricsData(cached, container);
+                return;
+            }
+
+            // Cache miss: enter stable loading state so the lyrics panel remains
+            // visible (prevents ytm-no-lyrics from collapsing the layout).
+            document.body.classList.add('ytm-lyrics-loading');
+            document.body.classList.remove('ytm-no-lyrics');
+            container.innerHTML = '<div class="loading-spinner">Loading lyrics...</div>';
+
+            const data = await VerdiMusic.getLyrics(track.title, track.artist, trackId);
+
+            // Stale-fetch guard: if the track changed while we were fetching, discard
+            // this result so we never overwrite a newer track's lyrics.
+            if (lyricsLoadingFor !== trackId) return;
+
+            document.body.classList.remove('ytm-lyrics-loading');
+
+            renderLyricsData(data, container);
         }
 
         // Update UI on events
