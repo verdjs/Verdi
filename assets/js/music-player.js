@@ -30,6 +30,12 @@ const VerdiMusic = (function () {
     let shuffleMode = false;
     let originalQueue = [];
 
+    // Play-history threshold: a track is recorded as "played" only after
+    // 15 seconds of continuous playback. The timer is purely informational –
+    // it dispatches a passive 'played' event and never resets lyrics or
+    // toggles ytm-no-lyrics.
+    let playHistoryTimer = null;
+
     // Initialize audio element (singleton for persistence)
     function getAudio() {
         if (!audio) {
@@ -119,6 +125,10 @@ const VerdiMusic = (function () {
 
     // Event handlers
     function handleTrackEnd() {
+        // Clear play-history timer on track end (song was skipped or finished early)
+        clearTimeout(playHistoryTimer);
+        playHistoryTimer = null;
+
         if (repeatMode === 'one') {
             audio.currentTime = 0;
             audio.play();
@@ -145,6 +155,10 @@ const VerdiMusic = (function () {
     }
 
     function handleError(e) {
+        // Clear play-history timer on error
+        clearTimeout(playHistoryTimer);
+        playHistoryTimer = null;
+
         console.error('Audio error:', e);
         dispatchEvent('error', { error: e });
     }
@@ -221,8 +235,23 @@ const VerdiMusic = (function () {
             getAudio().src = streamData.streamUrl;
             await audio.play();
 
-            // Add to recently played
+            // Record into recently-played immediately so the browsing UI is
+            // up-to-date from the first second of playback.
             addToRecentlyPlayed(currentTrack);
+
+            // Start a 15-second play-history confirmation timer.
+            // This is a passive scrobble-style threshold: it only dispatches a
+            // 'played' event and never clears lyrics, calls renderLyrics([]), or
+            // toggles ytm-no-lyrics. Clearing it here ensures a previous song's
+            // timer can never fire for the new track.
+            clearTimeout(playHistoryTimer);
+            playHistoryTimer = null;
+            const trackedTrack = currentTrack;
+            playHistoryTimer = setTimeout(() => {
+                playHistoryTimer = null;
+                // Passive event – UI listeners must not alter immersion layout state
+                dispatchEvent('played', { track: trackedTrack });
+            }, 15000);
 
             saveQueueState();
             dispatchEvent('trackchange', { track: currentTrack });
