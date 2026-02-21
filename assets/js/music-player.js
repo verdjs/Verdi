@@ -486,7 +486,23 @@ const VerdiMusic = (function () {
     }
 
     // ========== LYRICS ==========
-    async function getLyrics(title, artist) {
+
+    // Cache keyed by video_id for stable lookups across metadata updates
+    const lyricsCache = new Map();
+
+    // Synchronous cache lookup — returns the cached value or undefined if not yet fetched
+    function getLyricsFromCache(videoId) {
+        return lyricsCache.get(videoId);
+    }
+
+    async function getLyrics(title, artist, videoId) {
+        // Use the stable video_id as cache key when available
+        const cacheKey = videoId || (title + '\x00' + artist);
+
+        if (lyricsCache.has(cacheKey)) {
+            return lyricsCache.get(cacheKey);
+        }
+
         try {
             // Clean up title and artist for better matching
             const cleanTitle = title.replace(/\(.*?\)|\[.*?\]/g, '').trim();
@@ -494,31 +510,42 @@ const VerdiMusic = (function () {
 
             const url = `${LRCLIB_API}/search?q=${encodeURIComponent(cleanTitle + ' ' + cleanArtist)}`;
             const res = await fetch(url);
-            if (!res.ok) return null;
+            if (!res.ok) {
+                lyricsCache.set(cacheKey, null);
+                return null;
+            }
 
             const results = await res.json();
-            if (!results || results.length === 0) return null;
+            if (!results || results.length === 0) {
+                lyricsCache.set(cacheKey, null);
+                return null;
+            }
 
             // Get the first result with synced lyrics
             const withSynced = results.find(r => r.syncedLyrics);
             if (withSynced) {
-                return {
+                const result = {
                     synced: true,
                     lyrics: parseLRC(withSynced.syncedLyrics),
                     plain: withSynced.plainLyrics
                 };
+                lyricsCache.set(cacheKey, result);
+                return result;
             }
 
             // Fall back to plain lyrics
             const withPlain = results.find(r => r.plainLyrics);
             if (withPlain) {
-                return {
+                const result = {
                     synced: false,
                     lyrics: null,
                     plain: withPlain.plainLyrics
                 };
+                lyricsCache.set(cacheKey, result);
+                return result;
             }
 
+            lyricsCache.set(cacheKey, null);
             return null;
         } catch (e) {
             console.error('Lyrics error:', e);
@@ -646,6 +673,7 @@ const VerdiMusic = (function () {
         getRecentlyPlayed,
         // Lyrics
         getLyrics,
+        getLyricsFromCache,
         parseLRC,
         // Utilities
         formatDuration,
